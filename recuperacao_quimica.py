@@ -4,7 +4,6 @@ import numpy as np
 import os
 import random
 from datetime import datetime
-# import matplotlib.pyplot as plt  # Removido para compatibilidade sem matplotlib
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -20,7 +19,6 @@ DATABASE_PATH = "notas_quimica.csv"
 # Inicializar o arquivo de banco de dados (CSV) se não existir
 if not os.path.exists(DATABASE_PATH):
     df_init = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
-    # Garantir que a pasta scratch existe
     dir_name = os.path.dirname(DATABASE_PATH)
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
@@ -204,7 +202,7 @@ st.title("🧪 Portal de Recuperação de Química")
 st.subheader("Assunto: Ligações Químicas, Geometria e Condutividade")
 
 # Exibir banner gerado se existir no diretório de artefatos
-BANNER_PATH = "/workspace/artifacts/chemical_bonds_banner.png"
+BANNER_PATH = "chemical_bonds_banner.png"
 if os.path.exists(BANNER_PATH):
     st.image(BANNER_PATH, caption="Ligações Químicas: Iônica, Covalente e Metálica", use_container_width=True)
 
@@ -259,7 +257,7 @@ if menu == "1. Identificação do Aluno 👤":
                 st.session_state.aluno_ano = ano
                 st.session_state.aluno_turma = turma
                 
-                # Se mudou o aluno, resetar o quiz
+                # Se mudou o aluno, resetar o quiz na sessão
                 st.session_state.quiz_perguntas = []
                 st.session_state.respostas_aluno = {}
                 st.session_state.quiz_enviado = False
@@ -298,55 +296,52 @@ elif menu == "2. Material de Estudo 📚":
             "Nas **ligações iônicas**, ocorre a **transferência (perda ou ganho) definitiva de elétrons** entre os átomos [3, 4]. "
             "Nesse processo:\n"
             "- O átomo que **doa** elétrons torna-se um **cátion** (íon de carga positiva) [3, 7].\n"
-            "- O átomo que **recebe** elétrons torna-se um **ânion** (íon de carga negativa) [3].\n\n"
-            "**Exemplo Clássico:**\n"
-            "No sal de cozinha (Cloreto de Sódio - **NaCl**), o Sódio ($Na$) doa um elétron para o Cloro ($Cl$), originando os íons $Na^+$ e $Cl^-$ [3].\n\n"
+            "- O átomo que **recebe** elétrons torna-se um **ânion** (íon de carga negativa) [3, 7].\n\n"
+            "Por terem cargas elétricas opostas, esses íons se atraem fortemente de forma eletrostática, gerando compostos iônicos [3].\n\n"
             "**Propriedades dos compostos iônicos:**\n"
-            "- Geralmente são encontrados no **estado sólido** em condições ambientes [3].\n"
-            "- Apresentam **elevados pontos de fusão e de ebulição** devido à força da atração eletrostática [3].\n"
-            "- **Condutividade Elétrica:** Quando estão sólidos, não conduzem eletricidade. Porém, **quando dissolvidos em água ou fundidos**, são capazes de conduzir corrente elétrica eficientemente, pois seus íons são liberados e ficam livres em solução [3].\n\n"
-            "**Outros exemplos iônicos:** Brometo de potássio ($KBr$), Cloreto de cálcio ($CaCl_2$), Fluoreto de magnésio ($MgF_2$) [3]."
+            "- São **sólidos e cristalinos** em condições ambientes de temperatura e pressão [3].\n"
+            "- Apresentam **elevados pontos de fusão e de ebulição** devido à força das atrações elétricas [3].\n"
+            "- **Condutividade:** Não conduzem corrente elétrica no estado sólido, mas são excelentes condutores quando fundidos (líquidos) ou dissolvidos em água, pois seus íons adquirem mobilidade livre [3].\n\n"
+            "**Exemplos Clássicos:** Cloreto de Sódio ($NaCl$ - sal de cozinha), Brometo de Potássio ($KBr$), Cloreto de Cálcio ($CaCl_2$) e Fluoreto de Magnésio ($MgF_2$) [3]."
         )
         
     with tab3:
-        st.markdown("### 🧬 Ligações Covalentes (ou Moleculares)")
+        st.markdown("### 🧬 Ligações Covalentes")
         st.write(
-            "Nas **ligações covalentes**, não há perda ou ganho definitivo de elétrons. Em vez disso, ocorre o **compartilhamento de elétrons** "
-            "para formar moléculas estáveis, segundo a Teoria do Octeto [4]. Os elétrons cedidos temporariamente por cada um dos núcleos figuram como pares compartilhados [4].\n\n"
-            "**Exemplo Clássico:**\n"
-            "Na molécula de água (**$H_2O$**), o oxigênio compartilha pares eletrônicos com dois hidrogênios ($H - O - H$), resultando em uma molécula neutra [5].\n\n"
-            "**Classificação quanto à polaridade:** [5]\n"
-            "- **Ligação Covalente Polar:** Ocorre quando os átomos que compõem a molécula têm **eletronegatividades diferentes**, gerando polos elétricos na molécula. **Exemplo:** Água ($H_2O$) [5].\n"
-            "- **Ligação Covalente Apolar:** Ocorre quando a ligação é formada por átomos do mesmo elemento químico (ou eletronegatividades iguais), de forma que **não há diferença de eletronegatividade**. **Exemplo:** Gás Oxigênio ($O_2$) [5].\n\n"
-            "**Ligação Covalente Dativa ou Coordenada:** [6]\n"
-            "Ocorre quando um dos átomos já atingiu a estabilidade com seu octeto completo (oito elétrons) e compartilha um par de seus elétrons disponíveis com outro átomo que necessita de mais dois elétrons para ficar estável [6].\n"
-            "- **Exemplo:** Dióxido de enxofre (**$SO_2$**), representado por $O = S \\rightarrow O$. O enxofre faz uma ligação dupla estável com um oxigênio e doa o par eletrônico extra por ligação dativa para o outro oxigênio [6].\n\n"
-            "**Exemplos covalentes comuns:** Gás oxigênio ($O_2$), Sacarose ($C_{12}H_{22}O_{11}$), Ácido clorídrico ($HCl$) [5]."
+            "Também chamadas de ligações moleculares, as **ligações covalentes** ocorrem quando há o **compartilhamento mútuo de pares de elétrons** para formar moléculas estáveis de acordo com o octeto [4].\n\n"
+            "Nesse tipo de ligação, os elétrons compartilhados passam a pertencer simultaneamente aos dois núcleos envolvidos, mantendo a molécula neutra (sem ganho ou perda real de elétrons) [4].\n\n"
+            "**Classificação quanto à polaridade:**\n"
+            "- **Ligação Covalente Polar:** Ocorre quando os átomos apresentam eletronegatividades distintas, gerando um polo com maior densidade de carga no átomo mais eletronegativo. **Exemplo:** Água ($H_2O$) ou Ácido Clorídrico ($HCl$) [5].\n"
+            "- **Ligação Covalente Apolar:** Ocorre quando a ligação é formada por átomos do mesmo elemento químico (ou eletronegatividades iguais), de forma que não há diferença de eletronegatividade. **Exemplo:** Gás Oxigênio ($O_2$) [5].\n\n"
+            "**Ligação Covalente Dativa (Coordenada):**\n"
+            "Ocorre quando um dos átomos já está totalmente estável com seus 8 elétrons de valência completa, mas compartilha um par extra de seus elétrons disponíveis com outro átomo que necessita de mais dois elétrons para ficar estável [6]. "
+            "Um exemplo clássico do material é o Dióxido de Enxofre ($SO_2$), representado por: $O = S \\rightarrow O$ [6].\n\n"
+            "**Exemplos Gerais:** Água ($H_2O$), Gás Oxigênio ($O_2$), Sacarose (açúcar - $C_{12}H_{22}O_{11}$) e Ácido Clorídrico ($HCl$) [5]."
         )
         
     with tab4:
         st.markdown("### ⚙️ Ligações Metálicas")
         st.write(
-            "A **ligação metálica** ocorre exclusivamente entre os átomos de metais, que são elementos considerados altamente eletropositivos [7].\n\n"
-            "**O Mar de Elétrons:**\n"
-            "Os metais têm grande facilidade para perder os elétrons de suas últimas camadas. Esses elétrons liberados tornam-se 'elétrons livres' "
-            "e passam a formar uma **'nuvem eletrônica'** ou **'mar de elétrons'** ao redor dos cátions metálicos. Essa nuvem gera uma força atrativa "
-            "gigante que mantém todos os átomos do metal unidos de maneira firme e compacta [7].\n\n"
-            "**Propriedades dos Metais:**\n"
-            "- Apresentam **estado físico sólido em temperatura ambiente**, com uma única e importante **exceção: o mercúrio ($Hg$)**, que é o único metal líquido nessas condições [8].\n"
-            "- São **excelentes condutores de calor e eletricidade** devido à extrema mobilidade dos elétrons livres [7, 8].\n"
-            "- Possuem um **brilho característico** muito visível [8].\n\n"
-            "**Exemplos de metais puros:** Ouro ($Au$), Cobre ($Cu$), Prata ($Ag$), Ferro ($Fe$), Níquel ($Ni$), Alumínio ($Al$), Chumbo ($Pb$) e Zinco ($Zn$) [7]."
+            "A **ligação metálica** ocorre exclusivamente entre elementos metálicos, caracterizados por serem altamente eletropositivos e possuírem facilidade para perder elétrons periféricos [7].\n\n"
+            "**A Teoria do Mar de Elétrons:**\n"
+            "Os átomos do metal liberam elétrons da sua última camada (valência), tornando-se cátions metálicos. "
+            "Esses elétrons liberados formam uma nuvem deslocalizada (o **'mar de elétrons'**) que flui livremente ao redor dos cátions. "
+            "Essa força eletrostática contínua é o que mantém os átomos unidos de forma extremamente flexível e resistente [7].\n\n"
+            "**Propriedades Gerais dos Metais:**\n"
+            "- **Estado Físico:** Todos os metais são **sólidos** em condições ambientes, com **exceção única do Mercúrio ($Hg$)**, que é o único metal líquido [8].\n"
+            "- **Condutividade:** São **excelentes condutores térmicos e elétricos** tanto no estado sólido quanto no estado fundido devido à extrema mobilidade de seus elétrons livres [7, 8].\n"
+            "- **Outros:** Possuem brilho característico, alta maleabilidade (capacidade de fazer chapas) e ductibilidade (capacidade de fazer fios).\n\n"
+            "**Exemplos Clássicos:** Ouro ($Au$), Cobre ($Cu$), Prata ($Ag$), Ferro ($Fe$), Níquel ($Ni$), Alumínio ($Al$), Chumbo ($Pb$) e Zinco ($Zn$) [7]."
         )
         
     with tab5:
-        st.markdown("### ⚡ Resumo de Geometria e Condutividade")
+        st.markdown("### ⚡ Matriz de Condutividade e Geometria")
         st.write(
-            "Para a sua prova de recuperação, lembre-se das relações fundamentais de condutividade baseadas nas propriedades das ligações químicas:\n\n"
+            "Uma das formas mais fáceis de identificar o tipo de ligação de uma substância desconhecida em laboratório é testando a sua **condutividade elétrica** nos estados sólido e dissolvido/fundido."
         )
         
         dados_condutividade = {
-            "Tipo de Ligação": ["Iônica", "Covalente", "Metálica"],
+            "Tipo de Composto": ["Iônico [3]", "Covalente / Molecular [5]", "Metálico [7]"],
             "Unidade Básica": ["Íons (Cátions e Ânios) [3]", "Moléculas neutras [4, 5]", "Átomos envoltos em nuvem eletrônica [7]"],
             "Condutividade (Sólido)": ["PÉSSIMA (Íons presos no retículo) [3]", "PÉSSIMA (Não há cargas livres) [5]", "EXCELENTE (Mar de elétrons livre) [7, 8]"],
             "Condutividade (Líquido/Fundido/Solução)": ["EXCELENTE (Íons livres em movimento) [3]", "PÉSSIMA (Não possui cargas móveis) [5]", "EXCELENTE (Mar de elétrons livre) [7, 8]"],
@@ -391,6 +386,17 @@ elif menu == "3. Simulador de Ligações ⚙️":
                 st.markdown("**Propriedades Físicas:** Sólido cristalino em condições ambientes com altíssimo ponto de fusão [3].")
                 st.markdown("**Condutividade Elétrica:** Não conduz quando sólido, mas **conduz de forma excelente quando dissolvido em água** [3].")
             
+            # Sódio (Na) + Oxigênio (O) -> Na2O (Iônica) - CORREGIDO
+            elif "Sódio" in elemento_a and "Oxigênio" in elemento_b:
+                st.success("#### 🧂 Composto Formado: Óxido de Sódio ($Na_2O$)")
+                st.markdown("**Tipo de Ligação:** **Iônica** [3]")
+                st.markdown(
+                    "**Como ocorre:** Cada átomo de Sódio (Na) [Metal] doa 1 elétron para o átomo de Oxigênio (O) [Não-Metal]. "
+                    "São necessários dois átomos de Sódio para suprir a necessidade de dois elétrons do oxigênio, formando cátions $Na^+$ e o ânion $O^{2-}$ [2, 3]."
+                )
+                st.markdown("**Propriedades Físicas:** Sólido iônico cristalino branco em condições normais de elevadíssimo ponto de fusão [3].")
+                st.markdown("**Condutividade Elétrica:** Não conduz corrente quando sólido, mas é um **excelente condutor elétrico em solução aquosa ou quando fundido (líquido)** devido à liberação de íons livres [3].")
+
             # Cobre (Cu) + Cobre (Cu) -> Cu-Cu (Metálica)
             elif "Cobre" in elemento_a and "Cobre" in elemento_b:
                 st.success("#### 🪙 Composto Formado: Cobre Metálico ($Cu$)")
@@ -435,13 +441,13 @@ elif menu == "3. Simulador de Ligações ⚙️":
                 st.markdown("**Propriedades Físicas:** Gás molecular em condições ambientes.")
                 st.markdown("**Condutividade Elétrica:** Não conduz corrente elétrica.")
                 
-            # Combinações não iônicas / iônicas padrão
-            elif ("Metal" in elemento_a and "Metal" in elemento_b) or ("Cobre" in elemento_a and "Potássio" in elemento_b):
+            # Combinações não iônicas / iônicas padrão - corrigido com "[Metal]" e "[Não-Metal]" para evitar colisão do substring "Metal" em "Não-Metal"
+            elif ("[Metal]" in elemento_a and "[Metal]" in elemento_b) or ("Cobre" in elemento_a and "Potássio" in elemento_b):
                 st.warning("#### 🧱 Composto Formado: Liga Metálica")
                 st.markdown("**Tipo de Ligação:** **Metálica** [7]")
                 st.markdown("União de elementos metálicos eletropositivos compartilhando um mar de elétrons [7].")
             
-            elif ("Metal" in elemento_a and "Não-Metal" in elemento_b) or ("Potássio" in elemento_b and "Não-Metal" in elemento_a):
+            elif ("[Metal]" in elemento_a and "[Não-Metal]" in elemento_b) or ("Potássio" in elemento_b and "[Não-Metal]" in elemento_a):
                 st.success("#### 🧂 Composto Formado: Sal Iônico")
                 st.markdown("**Tipo de Ligação:** **Iônica** [3]")
                 st.markdown("Ocorre transferência total de elétrons do metal para o não-metal com formação de cátions e ânions [3].")
@@ -477,88 +483,125 @@ elif menu == "4. Quiz de Recuperação ✍️":
             
         questoes = st.session_state.quiz_perguntas
         
-        # Exibir o formulário com as questões
-        with st.form("form_quiz"):
+        # --- VERIFICAÇÃO SE O ALUNO JÁ REALIZOU O QUIZ ---
+        ja_realizou = False
+        nota_registrada = 0.0
+        acertos_registrados = 0
+        respostas_registradas = {}
+        
+        if os.path.exists(DATABASE_PATH):
+            try:
+                df_db = pd.read_csv(DATABASE_PATH)
+                # Buscar correspondência exata para Nome (case-insensitive e stripped), Ano e Turma
+                match_aluno = df_db[
+                    (df_db["Nome"].str.strip().str.lower() == st.session_state.aluno_nome.strip().lower()) &
+                    (df_db["Ano"] == st.session_state.aluno_ano) &
+                    (df_db["Turma"] == st.session_state.aluno_turma)
+                ]
+                if len(match_aluno) > 0:
+                    ja_realizou = True
+                    registro = match_aluno.iloc[0]
+                    nota_registrada = float(registro["Nota"])
+                    acertos_registrados = int(registro["Acertos"])
+                    try:
+                        import ast
+                        respostas_registradas = ast.literal_eval(registro["Respostas"])
+                    except:
+                        respostas_registradas = {}
+            except Exception as e:
+                st.error(f"Erro ao consultar registros de envio: {e}")
+                
+        # Se já realizou, mostrar a revisão diretamente (bloqueando nova tentativa)
+        if ja_realizou:
+            st.warning("⚠️ **Você já realizou esta avaliação de recuperação anteriormente!**")
+            st.info(f"Sua nota registrada no sistema é: **{nota_registrada:.1f} / 10.0** ({acertos_registrados} de 10 acertos). Não é permitido refazer a avaliação.")
+            
+            st.markdown("### 📊 Revisão da sua Avaliação")
+            
+            # Percorrer as questões e mostrar o gabarito
             for idx, q in enumerate(questoes):
                 st.markdown(f"#### Pergunta {idx + 1}")
                 st.markdown(f"**{q['pergunta']}**")
                 
-                # Resposta previamente selecionada, se houver
-                default_val = None
-                key_name = f"q_{q['id']}"
+                # Resposta que o estudante deu
+                resp_aluno = respostas_registradas.get(q['id']) or respostas_registradas.get(str(q['id']))
                 
-                escolha = st.radio(
-                    "Selecione a alternativa correta:",
-                    q["opcoes"],
-                    key=key_name,
-                    index=None
-                )
+                for op in q["opcoes"]:
+                    if op == q["correta"]:
+                        if resp_aluno == op:
+                            st.write(f"🟢 **{op}** (Sua resposta - Correta! ✅)")
+                        else:
+                            st.write(f"🟢 **{op}** (Alternativa Correta)")
+                    elif resp_aluno == op:
+                        st.write(f"🔴 **{op}** (Sua resposta - Incorreta ❌)")
+                    else:
+                        st.write(f"⚪ {op}")
                 
-                # Salvar a resposta selecionada no dicionário da sessão
-                if escolha:
-                    st.session_state.respostas_aluno[q['id']] = escolha
-                    
+                st.info(f"💡 *Explicação científica:* {q['justificativa']}")
                 st.markdown("---")
-            
-            enviar_respostas = st.form_submit_button("Enviar Avaliação ao Professor 📤")
-            
-            if enviar_respostas:
-                # Verificar se o aluno respondeu a todas as 10 perguntas
-                respostas_dadas = st.session_state.respostas_aluno
-                if len(respostas_dadas) < 10:
-                    st.error("⚠️ Você precisa responder a todas as 10 questões antes de enviar!")
-                else:
-                    # Calcular nota
-                    acertos = 0
-                    for q in questoes:
-                        resp_aluno = respostas_dadas.get(q['id'])
-                        if resp_aluno == q['correta']:
-                            acertos += 1
-                            
-                    nota_final = float(acertos) # Escala de 0 a 10
-                    st.session_state.quiz_nota = nota_final
-                    st.session_state.quiz_enviado = True
+        else:
+            # Caso contrário, exibir o formulário ativo para responder
+            with st.form("form_quiz"):
+                for idx, q in enumerate(questoes):
+                    st.markdown(f"#### Pergunta {idx + 1}")
+                    st.markdown(f"**{q['pergunta']}**")
                     
-                    # Salvar no banco de dados persistente (CSV)
-                    nova_nota = {
-                        "Data": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                        "Nome": st.session_state.aluno_nome,
-                        "Ano": st.session_state.aluno_ano,
-                        "Turma": st.session_state.aluno_turma,
-                        "Nota": nota_final,
-                        "Acertos": acertos,
-                        "Respostas": str(respostas_dadas)
-                    }
+                    key_name = f"q_{q['id']}"
                     
-                    try:
-                        df_db = pd.read_csv(DATABASE_PATH)
-                        df_db = pd.concat([df_db, pd.DataFrame([nova_nota])], ignore_index=True)
-                        df_db.to_csv(DATABASE_PATH, index=False)
-                        st.success("🎉 Avaliação enviada com sucesso! Sua nota foi computada no sistema do professor.")
-                    except Exception as e:
-                        st.error(f"Erro ao salvar nota no sistema: {e}")
+                    escolha = st.radio(
+                        "Selecione a alternativa correta:",
+                        q["opcoes"],
+                        key=key_name,
+                        index=None
+                    )
                     
-                    st.balloons()
-                    
-        # Exibição do Gabarito e Correção após o envio
-        if st.session_state.quiz_enviado:
-            st.markdown("## 📊 Resultado da Correção")
-            score = st.session_state.quiz_nota
-            if score >= 6.0:
-                st.success(f"### 🎉 Excelente Trabalho! Nota: **{score:.1f} / 10.0** (Aprovado na Recuperação!)")
-            else:
-                st.warning(f"### 📚 Nota: **{score:.1f} / 10.0**. Continue revisando o material de estudos para melhorar!")
+                    # Salvar a resposta selecionada no dicionário da sessão
+                    if escolha:
+                        st.session_state.respostas_aluno[q['id']] = escolha
+                        
+                    st.markdown("---")
                 
-            st.markdown("### Gabarito Detalhado:")
-            for idx, q in enumerate(questoes):
-                resp_estudante = st.session_state.respostas_aluno.get(q['id'])
-                is_correta = resp_estudante == q['correta']
+                enviar_respostas = st.form_submit_button("Enviar Avaliação ao Professor 📤")
                 
-                with st.expander(f"Questão {idx + 1} - {'✅ Correta' if is_correta else '❌ Incorreta'}"):
-                    st.markdown(f"**Pergunta:** {q['pergunta']}")
-                    st.markdown(f"**Sua resposta:** {resp_estudante}")
-                    st.markdown(f"**Resposta correta:** {q['correta']}")
-                    st.markdown(f"*Explicação científica:* {q['justificativa']}")
+                if enviar_respostas:
+                    respostas_dadas = st.session_state.respostas_aluno
+                    if len(respostas_dadas) < 10:
+                        st.error("⚠️ Você precisa responder a todas as 10 questões antes de enviar!")
+                    else:
+                        # Calcular nota
+                        acertos = 0
+                        for q in questoes:
+                            resp_aluno = respostas_dadas.get(q['id'])
+                            if resp_aluno == q['correta']:
+                                acertos += 1
+                                
+                        nota_final = float(acertos) # Escala de 0 a 10
+                        st.session_state.quiz_nota = nota_final
+                        st.session_state.quiz_enviado = True
+                        
+                        # Salvar no banco de dados persistente (CSV)
+                        nova_nota = {
+                            "Data": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                            "Nome": st.session_state.aluno_nome.strip(),
+                            "Ano": st.session_state.aluno_ano,
+                            "Turma": st.session_state.aluno_turma,
+                            "Nota": nota_final,
+                            "Acertos": acertos,
+                            "Respostas": str(respostas_dadas)
+                        }
+                        
+                        try:
+                            df_db = pd.read_csv(DATABASE_PATH)
+                            df_db = pd.concat([df_db, pd.DataFrame([nova_nota])], ignore_index=True)
+                            df_db.to_csv(DATABASE_PATH, index=False)
+                            st.success("🎉 Avaliação enviada com sucesso! Sua nota foi computada no sistema do professor.")
+                            st.balloons()
+                            try:
+                                st.rerun()
+                            except AttributeError:
+                                st.experimental_rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao salvar nota no sistema: {e}")
 
 # Seção 5: Área do Professor
 elif menu == "5. Área do Professor 🔑":
@@ -616,7 +659,6 @@ elif menu == "5. Área do Professor 🔑":
                 df_turma_media = df_filtrado.groupby("Turma")["Nota"].mean().reset_index()
                 
                 df_chart = df_turma_media.set_index("Turma")
-                # Gráfico interativo nativo do Streamlit, sem dependência de matplotlib
                 st.bar_chart(df_chart["Nota"])
             
             # Tabela de notas completa
@@ -641,7 +683,10 @@ elif menu == "5. Área do Professor 🔑":
                     df_init = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
                     df_init.to_csv(DATABASE_PATH, index=False)
                     st.success("Banco de notas limpo com sucesso! Atualize a página.")
-                    st.rerun()
+                    try:
+                        st.rerun()
+                    except AttributeError:
+                        st.experimental_rerun()
                     
     elif senha != "":
         st.error("Senha incorreta! Verifique os dados ou contate a coordenação.")
