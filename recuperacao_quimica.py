@@ -651,7 +651,7 @@ elif menu == "5. Área do Professor 🔑":
                 st.metric("Média Geral de Notas", f"{media_geral:.2f} / 10.0")
             with m_col3:
                 taxa_aprovacao = (len(df_filtrado[df_filtrado["Nota"] >= 6.0]) / len(df_filtrado) * 100) if len(df_filtrado) > 0 else 0.0
-                st.metric("Taxa de Aprovação (Nota >= 6.0)", f"{taxa_aprovacao:.1f}%")
+                st.metric("Taxa de Aprovação (Nota >= 7.0)", f"{taxa_aprovacao:.1f}%")
             
             # Gráfico de média por turma
             if len(df_filtrado) > 0:
