@@ -4,7 +4,7 @@ import numpy as np
 import os
 import random
 from datetime import datetime
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt  # Removido para compatibilidade sem matplotlib
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -15,13 +15,15 @@ st.set_page_config(
 )
 
 # Caminho para armazenamento das notas
-DATABASE_PATH = "/workspace/scratch/notas_quimica.csv"
+DATABASE_PATH = "notas_quimica.csv"
 
 # Inicializar o arquivo de banco de dados (CSV) se não existir
 if not os.path.exists(DATABASE_PATH):
     df_init = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
     # Garantir que a pasta scratch existe
-    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+    dir_name = os.path.dirname(DATABASE_PATH)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
     df_init.to_csv(DATABASE_PATH, index=False)
 
 # Banco de questões completo (Groundado estritamente nas fontes)
@@ -613,17 +615,9 @@ elif menu == "5. Área do Professor 🔑":
                 st.markdown("### 📈 Média de Notas por Turma")
                 df_turma_media = df_filtrado.groupby("Turma")["Nota"].mean().reset_index()
                 
-                fig, ax = plt.subplots(figsize=(6, 3))
-                colors = ["#4F8BF9", "#F39C12", "#00B050"]
-                ax.bar(df_turma_media["Turma"], df_turma_media["Nota"], color=colors[:len(df_turma_media)], width=0.4)
-                ax.set_ylabel("Média de Nota")
-                ax.set_xlabel("Turma")
-                ax.set_ylim(0, 10)
-                # Adicionar linha de corte (média 6)
-                ax.axhline(6.0, color="red", linestyle="--", label="Média de Aprovação (6.0)")
-                ax.legend()
-                
-                st.pyplot(fig)
+                df_chart = df_turma_media.set_index("Turma")
+                # Gráfico interativo nativo do Streamlit, sem dependência de matplotlib
+                st.bar_chart(df_chart["Nota"])
             
             # Tabela de notas completa
             st.markdown("### 📝 Lista de Estudantes e Notas")
