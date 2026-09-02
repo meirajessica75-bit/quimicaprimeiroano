@@ -1,692 +1,577 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 import random
 from datetime import datetime
 
-# Configuração da página do Streamlit
+# Configuração da página do Streamlit para Mobile-First (Layout Centralizado e Compacto)
 st.set_page_config(
-    page_title="Recuperação de Química: Ligações Químicas",
+    page_title="Recuperação de Química",
     page_icon="🧪",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered", # 'centered' é muito melhor para visualização em celulares
+    initial_sidebar_state="collapsed" # Menu lateral já inicia fechado por padrão
 )
 
-# Caminho para armazenamento das notas
-DATABASE_PATH = "notas_quimica.csv"
+# Caminho para salvar os resultados
+CSV_PATH = "resultados_estudantes.csv"
 
-# Inicializar o arquivo de banco de dados (CSV) se não existir
-if not os.path.exists(DATABASE_PATH):
-    df_init = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
-    dir_name = os.path.dirname(DATABASE_PATH)
-    if dir_name:
-        os.makedirs(dir_name, exist_ok=True)
-    df_init.to_csv(DATABASE_PATH, index=False)
-
-# Banco de questões completo (Groundado estritamente nas fontes)
-# Citações das passagens:
-# [2] Regra do Octeto, estabilidade com 8 elétrons na camada de valência.
-# [3] Ligação Iônica, transferência de elétrons, cátion/ânion, sólido, alto ponto de fusão, condutividade em solução aquosa. NaCl, KBr, CaCl2, MgF2.
-# [4] Ligação covalente ou molecular, compartilhamento de elétrons.
-# [5] Covalente Polar (H2O, diferença de eletronegatividade) vs Apolar (O2, mesmo elemento, sem diferença de eletronegatividade), HCl, sacarose.
-# [6] Ligação covalente dativa ou coordenada, octeto completo compartilha 2 elétrons adicionais, SO2 (dupla ligação e dativa).
-# [7] Ligação Metálica, metais, mar de elétrons/nuvem eletrônica, bons condutores, ouro, cobre, prata, ferro, níquel, alumínio, chumbo, zinco.
-# [8] Metais sólidos na temperatura ambiente exceto Mercúrio (Hg). Bons condutores, brilho característico.
-# [9] Questão do cloro (ganha 1 elétron para estabilidade), substâncias covalentes (etanol e CO2).
-QUESTOES_POOL = [
+# Banco de 10 questões contextualizadas e baseadas rigorosamente nas fontes
+QUESTOES_BANCO = [
     {
         "id": 1,
-        "pergunta": "Segundo a Regra do Octeto, muitos átomos apresentam estabilidade eletrônica quando possuem quantos elétrons na camada de valência (camada eletrônica mais externa)?",
+        "pergunta": "De acordo com o texto sobre o Filtro de Barro (pág. 39), por que a água em seu interior se mantém sempre 'fresca'?",
         "opcoes": [
-            "A) 2 elétrons",
-            "B) 6 elétrons",
-            "C) 8 elétrons",
-            "D) 10 elétrons"
+            "A cerâmica microporosa permite que uma pequena quantidade de água passe para o lado externo e evapore, absorvendo calor da água interna (um processo endotérmico).",
+            "O filtro de barro possui um isolamento térmico de cerâmica que impede totalmente a entrada de calor externo, mantendo a água fria por condução térmica.",
+            "A reação química entre a argila do filtro e os sais minerais da água libera energia em forma de frio, resfriando o sistema de forma espontânea.",
+            "A água sofre uma reação de combustão lenta ao entrar em contato com os microporos do barro, resultando em uma reação exotérmica que estabiliza a temperatura."
         ],
-        "correta": "C) 8 elétrons",
-        "justificativa": "A Regra do Octeto dita que os átomos buscam a estabilidade assemelhando-se aos gases nobres, o que ocorre quando possuem 8 elétrons na camada eletrônica mais externa [2]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 39"
     },
     {
         "id": 2,
-        "pergunta": "No composto cloreto de sódio (NaCl), sal de cozinha, como ocorre a atração e ligação entre os átomos de Sódio (Na) e Cloro (Cl)?",
+        "pergunta": "Com base no texto sobre o Sistema de Arrefecimento de veículos (pág. 37 e 40), qual é a relação desse sistema com os conceitos da termoquímica?",
         "opcoes": [
-            "A) Por meio do compartilhamento de 2 pares de elétrons livres.",
-            "B) O sódio doa um elétron para o cloro, formando um cátion (Na+) e um ânion (Cl-) que se atraem eletronicamente.",
-            "C) Pela formação de uma nuvem de elétrons livres ou mar de elétrons.",
-            "D) Por meio de uma ligação covalente polar dativa coordenada."
+            "A queima de combustíveis é uma reação exotérmica altamente energética que libera calor e aquece o motor; a água de arrefecimento deve absorver esse calor para evitar que as peças derretam.",
+            "O motor do carro funciona por meio de uma reação endotérmica que resfria naturalmente as peças, e o sistema de arrefecimento serve para fornecer o calor necessário para a ignição acontecer.",
+            "O sistema de arrefecimento utiliza a evaporação do combustível no motor para absorver calor, mimetizando perfeitamente o funcionamento de um filtro de barro de cerâmica.",
+            "A queima de combustíveis é uma transformação física endotérmica, e a água do radiador serve para resfriar os gases de escape que saem a altas pressões."
         ],
-        "correta": "B) O sódio doa um elétron para o cloro, formando um cátion (Na+) e um ânion (Cl-) que se atraem eletronicamente.",
-        "justificativa": "Na ligação iônica do NaCl, o sódio doa um elétron para o cloro, formando íons de cargas opostas (cátion Na+ e ânion Cl-) que se unem pela força eletrostática [3]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 37, 40"
     },
     {
         "id": 3,
-        "pergunta": "Quais são as propriedades físicas típicas apresentadas pelos compostos iônicos (como KBr, CaCl2 e MgF2) descritas nas fontes de estudo?",
+        "pergunta": "Os sacos de resfriamento instantâneo, usados em práticas esportivas para tratar lesões, utilizam a dissolução do nitrato de amônio (NH₄NO₃) em água (pág. 40). Esse processo é classificado como:",
         "opcoes": [
-            "A) São encontrados no estado líquido em condições normais e têm baixo ponto de ebulição.",
-            "B) São encontrados no estado sólido em condições ambientes e apresentam elevados pontos de fusão e ebulição.",
-            "C) São gasosos em temperatura ambiente e são ótimos isolantes térmicos em qualquer estado físico.",
-            "D) São altamente maleáveis e ductíveis a frio, apresentando brilho metálico característico."
+            "Endotérmico (ΔH ≈ 26 kJ/mol), pois a dissolução absorve calor do meio, resfriando o sistema e podendo atingir uma temperatura de cerca de -15 °C.",
+            "Exotérmico (ΔH ≈ -26 kJ/mol), pois a quebra das ligações iônicas do sal libera energia térmica que gela a água instantaneamente.",
+            "Isotérmico, pois a temperatura se mantém perfeitamente constante e o resfriamento é provocado apenas pela compressão física do saco plástico.",
+            "Combustão controlada, na qual a água líquida atua como comburente e o nitrato de amônio sólido como combustível, absorvendo energia luminosa."
         ],
-        "correta": "B) São encontrados no estado sólido em condições ambientes e apresentam elevados pontos de fusão e ebulição.",
-        "justificativa": "Os compostos iônicos são tipicamente sólidos em temperatura ambiente e possuem elevados pontos de fusão e ebulição devido à forte atração entre os íons [3]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 40"
     },
     {
         "id": 4,
-        "pergunta": "Por que as substâncias iônicas, quando dissolvidas em água, tornam-se excelentes condutoras de corrente elétrica?",
+        "pergunta": "Segundo o texto explicativo da página 40 sobre as sensações térmicas nos experimentos, como se classifica a dissolução do cloreto de cálcio (CaCl₂) em água e por quê?",
         "opcoes": [
-            "A) Porque liberam elétrons livres que se movem de forma desordenada no líquido.",
-            "B) Porque se transformam em metais líquidos condutores altamente maleáveis.",
-            "C) Porque seus íons são liberados e ficam livres para se movimentar em solução.",
-            "D) Porque ocorre o compartilhamento molecular de seus pares eletrônicos polares."
+            "Endotérmico, pois nela observa-se um resfriamento do sistema decorrente da necessidade de ganho de energia para que ocorra a dissolução (ΔH > 0).",
+            "Exotérmico, pois nela ocorre liberação ativa de calor, que é observada pelo aquecimento perceptível do béquer ao toque da mão (ΔH < 0).",
+            "Endotérmico, porque a energia térmica 'sai do sistema' e se dissipa na atmosfera sob a forma de radiação infravermelha visível.",
+            "Exotérmico, porque a reação consome a água do béquer para formar uma liga metálica sólida e liberar hidrogênio gasoso inflamável."
         ],
-        "correta": "C) Porque seus íons são liberados e ficam livres para se movimentar em solução.",
-        "justificativa": "A condutividade elétrica nos compostos iônicos ocorre em meio aquoso porque a água separa os íons (dissociação iônica), permitindo a condução de corrente [3]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 40"
     },
     {
         "id": 5,
-        "pergunta": "Como se define a Ligação Covalente (ou molecular) segundo a Teoria do Octeto?",
+        "pergunta": "Analisando os gráficos de variação de entalpia (H) em relação ao caminho da reação (pág. 40), o que diferencia um gráfico de reação exotérmica de um gráfico de reação endotérmica?",
         "opcoes": [
-            "A) É a ligação que ocorre exclusivamente entre metais com liberação de elétrons livres.",
-            "B) É a ligação caracterizada pela perda ou ganho total de elétrons de valência.",
-            "C) É a ligação em que ocorre o compartilhamento de elétrons para a formação de moléculas estáveis.",
-            "D) É a ligação estabelecida exclusivamente por atração magnética de dipolos induzidos."
+            "Na reação exotérmica, a entalpia dos reagentes (H_R) é maior que a dos produtos (H_P), logo ΔH < 0; na endotérmica, a entalpia dos produtos (H_P) é maior que a dos reagentes (H_R), logo ΔH > 0.",
+            "Na reação exotérmica, o gráfico é uma linha reta ascendente sem pico de energia; na endotérmica, o gráfico possui um pico correspondente ao complexo ativado.",
+            "Na reação endotérmica, a entalpia final é nula pois toda a energia é consumida; na exotérmica, a entalpia final dobra devido à geração contínua de calor.",
+            "Na reação exotérmica, o ΔH é positivo porque há ganho de energia pelo meio ambiente; na endotérmica, o ΔH é negativo porque o sistema perde energia interna."
         ],
-        "correta": "C) É a ligação em que ocorre o compartilhamento de elétrons para a formação de moléculas estáveis.",
-        "justificativa": "Diferente da ligação iônica, na ligação covalente os átomos compartilham pares eletrônicos para atingir a estabilidade eletrônica do octeto [4]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 40"
     },
     {
         "id": 6,
-        "pergunta": "A molécula de água (H2O) e a de oxigênio (O2) possuem ligações covalentes. No entanto, por que a água é polar e o oxigênio é apolar?",
+        "pergunta": "Na página 41, são apresentadas equações termoquímicas. Sabendo que o calor pode ser representado dentro da equação, como identificamos se a reação é endotérmica ou exotérmica?",
         "opcoes": [
-            "A) A água é polar porque seus átomos apresentam diferentes eletronegatividades; já o O2 é apolar pois seus átomos são idênticos e não há diferença de eletronegatividade.",
-            "B) A água é polar porque perde elétrons na ligação; já o O2 compartilha elétrons dativos de forma coordenada.",
-            "C) O oxigênio é apolar porque conduz eletricidade no estado líquido; já a água necessita de sal para conduzir.",
-            "D) A água é polar porque é formada por ligações iônicas; já o oxigênio é molecular puro."
+            "Se o calor estiver somado aos reagentes (ex: 2 NH3 + 22 kcal -> N2 + 3 H2), o processo é endotérmico; se estiver somado aos produtos (ex: C + 2 H2 -> CH4 + 18 kcal), é exotérmico.",
+            "Se o calor estiver somado aos reagentes, a reação é exotérmica porque os reagentes liberam essa energia; se estiver nos produtos, é endotérmica porque foi absorvida.",
+            "Toda equação que apresenta valores numéricos de energia em calorias (kcal) represents reações exotérmicas, enquanto as em quilojoules (kJ) são endotérmicas.",
+            "Reações endotérmicas são representadas por sinais negativos ao lado do calor somado aos reagentes, demonstrando a ausência de entalpia nos produtos."
         ],
-        "correta": "A) A água é polar porque seus átomos apresentam diferentes eletronegatividades; já o O2 é apolar pois seus átomos são idênticos e não há diferença de eletronegatividade.",
-        "justificativa": "Ligações entre átomos de diferentes eletronegatividades formam polos (polares), enquanto átomos do mesmo elemento químico não apresentam diferença de eletronegatividade (apolares) [5]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 41 & Vídeo"
     },
     {
         "id": 7,
-        "pergunta": "O que caracteriza uma Ligação Covalente Dativa (também chamada de coordenada), exemplificada no composto SO2 (dióxido de enxofre)?",
+        "pergunta": "Na videoaula do Brasil Escola, o professor Choven faz uma analogia divertida com compras de roupas em um shopping para explicar a Lei de Hess. O que essa analogia ilustra?",
         "opcoes": [
-            "A) É caracterizada pela transferência completa de um elétron livre do metal para o não-metal.",
-            "B) Ocorre quando os elétrons se desprendem dos átomos formando um mar de elétrons livres.",
-            "C) Ocorre quando um dos átomos já apresenta seu octeto completo (estável) e compartilha um par de seus elétrons com o outro átomo que necessita de mais dois elétrons.",
-            "D) É uma ligação temporária que só existe quando as moléculas estão no estado gasoso."
+            "Que não importa o caminho ou as voltas que a reação dê (como a mulher andando pelo shopping e o homem indo direto), se o estado inicial e o final forem os mesmos, a variação de entalpia total será a mesma.",
+            "Que as reações do tipo femininas gastam mais energia (entalpia) do que as reações masculinas devido ao número de etapas intermediárias necessárias.",
+            "Que a Lei de Hess só é aplicável para processos que ocorrem em ambientes fechados e sob pressão constante de 1 ATM, semelhantes a um shopping center.",
+            "Que o caminho mais curto sempre consome menos calor de reação, enquanto caminhos mais longos alteram irreversivelmente a entalpia final do sistema."
         ],
-        "correta": "C) Ocorre quando um dos átomos já apresenta seu octeto completo (estável) e compartilha um par de seus elétrons com o outro átomo que necessita de mais dois elétrons.",
-        "justificativa": "Na ligação dativa, um átomo já está estável com oito elétrons e compartilha seu par disponível com outro átomo para que este também alcance a estabilidade [6]."
+        "correta": 0,
+        "referencia": "Videoaula Brasil Escola"
     },
     {
         "id": 8,
-        "pergunta": "A ligação metálica ocorre entre elementos eletropositivos (metais). De que forma esses átomos permanecem fortemente unidos?",
+        "pergunta": "De acordo com as considerações importantes sobre equações termoquímicas (pág. 41), o que acontece com a variação de entalpia (ΔH) quando invertemos o sentido de uma reação química?",
         "opcoes": [
-            "A) Através de forças magnéticas de curto alcance geradas por prótons livres.",
-            "B) Através de uma 'nuvem eletrônica' (ou 'mar de elétrons') formada por elétrons livres que se desprenderam da última camada.",
-            "C) Através do compartilhamento de ligações dativas coordenadas dirigidas espacialmente.",
-            "D) Através de pontes de hidrogênio geradas pela umidade do ar."
+            "O valor numérico de ΔH permanece o mesmo, mas o sinal algébrico é invertido (por exemplo, se era negativo, passa a ser positivo).",
+            "A reação deixa de possuir valor de entalpia e o ΔH torna-se nulo, pois os reagentes e produtos se cancelam mutuamente.",
+            "O valor numérico de ΔH é duplicado devido ao esforço cinético necessário para forçar a reação a ocorrer no sentido contrário.",
+            "O sinal permanece o mesmo, mas a unidade de medida muda de quilojoules (kJ) para quilocalorias (kcal) para diferenciar a reação inversa."
         ],
-        "correta": "B) Através de uma 'nuvem eletrônica' (ou 'mar de elétrons') formada por elétrons livres que se desprenderam da última camada.",
-        "justificativa": "Os metais perdem elétrons da última camada, tornando-se cátions envolvidos por uma nuvem ou 'mar' de elétrons livres, que produz uma força de união entre os átomos [7]."
+        "correta": 0,
+        "referencia": "Livro Didático, Pág. 41"
     },
     {
         "id": 9,
-        "pergunta": "Quais são as propriedades características gerais das substâncias metálicas, como o Cobre (Cu) ou Alumínio (Al), descritas nos textos de apoio?",
+        "pergunta": "No início do vídeo do Brasil Escola, o professor Choven define o termo fundamental da termoquímica. Segundo ele, o que é entalpia (H)?",
         "opcoes": [
-            "A) São quebradiças, opacas e péssimas condutoras de calor.",
-            "B) Apresentam brilho característico, são bons condutores de calor e eletricidade e encontram-se no estado sólido (exceto o mercúrio).",
-            "C) Apresentam baixíssimo ponto de ebulição e são solúveis em solventes apolares orgânicos.",
-            "D) São encontradas sempre no estado líquido em temperatura ambiente, conduzindo corrente apenas se aquecidas."
+            "Entalpia é a quantidade de calor contida em um sistema.",
+            "Entalpia é a velocidade com que uma reação química consome calor.",
+            "Entalpia é a força eletromagnética gerada pela movimentação de elétrons nas ligações químicas.",
+            "Entalpia é a temperatura absoluta de um gás ideal medida na escala Kelvin."
         ],
-        "correta": "B) Apresentam brilho característico, são bons condutores de calor e eletricidade e encontram-se no estado sólido (exceto o mercúrio).",
-        "justificativa": "Os metais são ótimos condutores térmicos e elétricos, brilham e são sólidos à temperatura ambiente, com a única exceção do mercúrio (líquido) [8]."
+        "correta": 0,
+        "referencia": "Videoaula Brasil Escola"
     },
     {
         "id": 10,
-        "pergunta": "De acordo com as fontes de apoio, quais das substâncias a seguir apresentam apenas ligações químicas interatômicas do tipo covalente?",
+        "pergunta": "Na videoaula, o professor Choven destaca que o valor da variação de entalpia (ΔH) de uma reação pode ser alterado por alguns fatores importantes. Quais são eles?",
         "opcoes": [
-            "A) Etanol e Dióxido de carbono",
-            "B) Cloreto de sódio e Etanol",
-            "C) Dióxido de carbono e Cloreto de sódio",
-            "D) Gás hélio e Cloreto de sódio"
+            "Estado físico de reagente/produto, estado alotrópico, temperatura e concentração (quantidade de matéria).",
+            "Pressão atmosférica, altitude geográfica, velocidade do vento e tipo de catalisador químico utilizado.",
+            "Massa molar do soluto, volume do recipiente, pH da solução e condutividade elétrica do meio.",
+            "Cor dos reagentes, presença de luz solar direta, umidade do ar e rotação da terra."
         ],
-        "correta": "A) Etanol e Dióxido de carbono",
-        "justificativa": "O etanol (C2H6O) e o dióxido de carbono (CO2) apresentam apenas ligações interatômicas covalentes (compartilhamento de elétrons), enquanto o NaCl é iônico [9]."
-    },
-    {
-        "id": 11,
-        "pergunta": "Um átomo de um elemento químico cujo número atômico é 17 (Cloro), para adquirir a estabilidade de um gás nobre de acordo com a Regra do Octeto, deve:",
-        "opcoes": [
-            "A) Doar 7 elétrons da sua camada de valência.",
-            "B) Ganhar 1 elétron através de uma ligação química.",
-            "C) Compartilhar 4 pares de elétrons dativos coordenados.",
-            "D) Transformar-se em um cátion estável de carga positiva."
-        ],
-        "correta": "B) Ganhar 1 elétron através de uma ligação química.",
-        "justificativa": "Com número atômico 17, a distribuição eletrônica possui 7 elétrons na camada de valência. Para completar o octeto (8 elétrons) e se estabilizar, o átomo precisa ganhar 1 elétron [8, 9]."
-    },
-    {
-        "id": 12,
-        "pergunta": "Qual das seguintes alternativas lista apenas exemplos de metais citados no material de ligações metálicas?",
-        "opcoes": [
-            "A) Ouro (Au), Cobre (Cu), Prata (Ag), Ferro (Fe), Sacarose e Água.",
-            "B) Dióxido de carbono, Ácido clorídrico, Ouro e Chumbo.",
-            "C) Ouro (Au), Cobre (Cu), Prata (Ag), Ferro (Fe), Alumínio (Al), Chumbo (Pb) e Zinco (Zn).",
-            "D) Cloreto de sódio, Brometo de potássio e Fluoreto de magnésio."
-        ],
-        "correta": "C) Ouro (Au), Cobre (Cu), Prata (Ag), Ferro (Fe), Alumínio (Al), Chumbo (Pb) e Zinco (Zn).",
-        "justificativa": "Estes são os elementos químicos puramente metálicos indicados na fonte, que realizam ligações metálicas e formam o mar de elétrons [7]."
+        "correta": 0,
+        "referencia": "Videoaula Brasil Escola"
     }
 ]
 
-# Inicializar estados da sessão (Session State)
-if "aluno_nome" not in st.session_state:
-    st.session_state.aluno_nome = ""
-if "aluno_ano" not in st.session_state:
-    st.session_state.aluno_ano = ""
-if "aluno_turma" not in st.session_state:
-    st.session_state.aluno_turma = ""
-if "quiz_perguntas" not in st.session_state:
-    st.session_state.quiz_perguntas = []
-if "respostas_aluno" not in st.session_state:
-    st.session_state.respostas_aluno = {}
-if "quiz_enviado" not in st.session_state:
-    st.session_state.quiz_enviado = False
-if "quiz_nota" not in st.session_state:
-    st.session_state.quiz_nota = 0.0
+# Inicializar estados da sessão do Streamlit
+if "etapa" not in st.session_state:
+    st.session_state.etapa = "Identificação"
+if "nome" not in st.session_state:
+    st.session_state.nome = ""
+if "ano" not in st.session_state:
+    st.session_state.ano = "2º Ano"
+if "serie" not in st.session_state:
+    st.session_state.serie = ""
+if "questoes_sorteadas" not in st.session_state:
+    st.session_state.questoes_sorteadas = []
+if "respostas_estudante" not in st.session_state:
+    st.session_state.respostas_estudante = {}
+if "finalizado" not in st.session_state:
+    st.session_state.finalizado = False
+if "nota_obtida" not in st.session_state:
+    st.session_state.nota_obtida = 0.0
+if "gabarito" not in st.session_state:
+    st.session_state.gabarito = []
 
-# Logo e Banner
-st.title("🧪 Portal de Recuperação de Química")
-st.subheader("Assunto: Ligações Químicas, Geometria e Condutividade")
+# Função para sortear questões e embaralhar alternativas (evitando cópia)
+def inicializar_quiz():
+    questoes = random.sample(QUESTOES_BANCO, 5)
+    questoes_preparadas = []
+    
+    for q in questoes:
+        opcoes_originais = list(q["opcoes"])
+        correta_original = opcoes_originais[q["correta"]]
+        
+        opcoes_embaralhadas = list(opcoes_originais)
+        random.shuffle(opcoes_embaralhadas)
+        
+        nova_correta = opcoes_embaralhadas.index(correta_original)
+        
+        questoes_preparadas.append({
+            "id": q["id"],
+            "pergunta": q["pergunta"],
+            "opcoes": opcoes_embaralhadas,
+            "correta": nova_correta,
+            "referencia": q["referencia"]
+        })
+    st.session_state.questoes_sorteadas = questoes_preparadas
+    st.session_state.respostas_estudante = {}
+    st.session_state.finalizado = False
 
-# Exibir banner gerado se existir no diretório de artefatos
-BANNER_PATH = "chemical_bonds_banner.png"
-if os.path.exists(BANNER_PATH):
-    st.image(BANNER_PATH, caption="Ligações Químicas: Iônica, Covalente e Metálica", use_container_width=True)
+# Função para plotar o diagrama de entalpia dinamicamente
+def plotar_diagrama(tipo_reacao, nome_reacao):
+    fig, ax = plt.subplots(figsize=(6, 4))
+    
+    if tipo_reacao == "Exotérmica":
+        y_reag = 80
+        y_pico = 120
+        y_prod = 30
+        cor_curva = "#d9534f"
+        cor_seta = "#c9302c"
+    else:  # Endotérmica
+        y_reag = 30
+        y_pico = 100
+        y_prod = 80
+        cor_curva = "#0275d8"
+        cor_seta = "#025aa5"
+        
+    x = np.linspace(0, 10, 100)
+    y = np.zeros_like(x)
+    for i, xi in enumerate(x):
+        if xi < 3:
+            y[i] = y_reag
+        elif xi > 7:
+            y[i] = y_prod
+        else:
+            t = (xi - 3) / 4
+            base = y_reag + (y_prod - y_reag) * t
+            pico = 4 * (y_pico - max(y_reag, y_prod)) * t * (1 - t)
+            y[i] = base + pico
 
-# Barra lateral para navegação e status do aluno
-st.sidebar.markdown("### 🧪 Menu de Navegação")
-menu = st.sidebar.radio(
-    "Selecione uma seção:",
-    [
-        "1. Identificação do Aluno 👤",
-        "2. Material de Estudo 📚",
-        "3. Simulador de Ligações ⚙️",
-        "4. Quiz de Recuperação ✍️",
-        "5. Área do Professor 🔑"
-    ]
-)
+    ax.plot(x, y, color=cor_curva, linewidth=3, label="Caminho da Reação")
+    ax.axhline(y=y_reag, xmin=0.05, xmax=0.3, color="gray", linestyle="--")
+    ax.axhline(y=y_prod, xmin=0.7, xmax=0.95, color="gray", linestyle="--")
+    
+    ax.text(0.5, y_reag + 3, "Reagentes", fontsize=10, fontweight="bold", color="#333333")
+    ax.text(7.5, y_prod + 3, "Produtos", fontsize=10, fontweight="bold", color="#333333")
+    ax.text(5, y_pico + 3, "Complexo Ativado", fontsize=9, fontstyle="italic", color="#555555", ha="center")
+    
+    if tipo_reacao == "Exotérmica":
+        ax.annotate("", xy=(8.5, y_prod), xytext=(8.5, y_reag),
+                    arrowprops=dict(facecolor=cor_seta, edgecolor=cor_seta, shrink=0.05, width=2, headwidth=8))
+        ax.text(8.8, (y_reag + y_prod)/2, "ΔH < 0\n(Libera)", fontsize=10, fontweight="bold", color=cor_seta, va="center")
+    else:
+        ax.annotate("", xy=(8.5, y_prod), xytext=(8.5, y_reag),
+                    arrowprops=dict(facecolor=cor_seta, edgecolor=cor_seta, shrink=0.05, width=2, headwidth=8))
+        ax.text(8.8, (y_reag + y_prod)/2, "ΔH > 0\n(Absorve)", fontsize=10, fontweight="bold", color=cor_seta, va="center")
+        
+    ax.annotate("", xy=(5, y_pico), xytext=(5, y_reag),
+                arrowprops=dict(arrowstyle="<->", color="purple", lw=1.5))
+    ax.text(4.8, (y_pico + y_reag)/2, "Ea", color="purple", fontsize=10, fontweight="bold", ha="right")
 
-# Mostrar status do aluno na lateral
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 👤 Status do Estudante")
-if st.session_state.aluno_nome:
-    st.sidebar.success(f"**Nome:** {st.session_state.aluno_nome}")
-    st.sidebar.info(f"**Ano:** {st.session_state.aluno_ano} | **Turma:** {st.session_state.aluno_turma}")
+    ax.set_title(f"Diagrama de Entalpia: {nome_reacao}", fontsize=11, fontweight="bold", pad=12)
+    ax.set_xlabel("Caminho da Reação →", fontsize=9)
+    ax.set_ylabel("Entalpia (H) →", fontsize=9)
+    ax.set_ylim(0, y_pico + 20)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#cccccc')
+    ax.spines['bottom'].set_color('#cccccc')
+    
+    plt.tight_layout()
+    return fig
+
+# --- CABEÇALHO COMPACTO (Mobile First) ---
+col_logo, col_titulo = st.columns([1, 4])
+with col_logo:
+    st.image("https://cdn-icons-png.flaticon.com/512/3081/3081971.png", width=60)
+with col_titulo:
+    st.subheader("Atividade de Recuperação: Termoquímica")
+
+# --- BARRA DE PROGRESSO HORIZONTAL (Substitui o Menu Lateral no celular) ---
+etapas_info = {
+    "Identificação": {"passo": 1, "pct": 0.25},
+    "Vídeo de Apoio": {"passo": 2, "pct": 0.50},
+    "Simulador Prático": {"passo": 3, "pct": 0.75},
+    "Quiz Interativo": {"passo": 4, "pct": 1.0}
+}
+
+info = etapas_info.get(st.session_state.etapa, {"passo": 1, "pct": 0.25})
+
+if st.session_state.nome and not st.session_state.finalizado:
+    st.caption(f"👤 Aluno: **{st.session_state.nome}** (Série: **{st.session_state.serie}**) | 📊 Passo {info['passo']} de 4")
+    st.progress(info["pct"])
 else:
-    st.sidebar.warning("Nenhum aluno identificado. Vá na seção 1.")
+    st.progress(0.1 if not st.session_state.finalizado else 1.0)
 
-# Seção 1: Identificação do Aluno
-if menu == "1. Identificação do Aluno 👤":
-    st.markdown("## 👤 Identificação do Aluno")
-    st.write("Bem-vindo ao portal de recuperação! Antes de começar os estudos e realizar o simulador ou o quiz, por favor, identifique-se abaixo:")
-    
-    with st.form("form_identificacao"):
-        nome = st.text_input("Nome Completo:", value=st.session_state.aluno_nome, placeholder="Digite seu nome completo...")
-        ano = st.selectbox(
-            "Ano Escolar:",
-            ["1º Ano do Ensino Médio", "2º Ano do Ensino Médio", "3º Ano do Ensino Médio"],
-            index=0 if not st.session_state.aluno_ano else ["1º Ano do Ensino Médio", "2º Ano do Ensino Médio", "3º Ano do Ensino Médio"].index(st.session_state.aluno_ano)
-        )
-        turma = st.radio(
-            "Selecione a sua Turma:",
-            ["A", "B", "C"],
-            horizontal=True,
-            index=0 if not st.session_state.aluno_turma else ["A", "B", "C"].index(st.session_state.aluno_turma)
-        )
-        
-        salvar = st.form_submit_button("Confirmar Dados 💾")
-        
-        if salvar:
-            if nome.strip() == "":
-                st.error("Por favor, preencha o seu nome completo antes de continuar!")
-            else:
-                st.session_state.aluno_nome = nome.strip()
-                st.session_state.aluno_ano = ano
-                st.session_state.aluno_turma = turma
-                
-                # Se mudou o aluno, resetar o quiz na sessão
-                st.session_state.quiz_perguntas = []
-                st.session_state.respostas_aluno = {}
-                st.session_state.quiz_enviado = False
-                st.session_state.quiz_nota = 0.0
-                
-                st.success("Dados confirmados com sucesso! Agora você pode acessar o material de estudo e fazer o Quiz.")
-                st.balloons()
+st.markdown("---")
 
-# Seção 2: Material de Estudo
-elif menu == "2. Material de Estudo 📚":
-    st.markdown("## 📚 Material Didático de Recuperação")
-    st.write("Estude atentamente os conceitos fundamentais abaixo. Todo o conteúdo é baseado nas regras químicas oficiais e servirá de base para o seu Quiz de recuperação!")
-    
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Regra do Octeto 🌀", 
-        "Ligação Iônica 🔋", 
-        "Ligação Covalente 🧬", 
-        "Ligação Metálica ⚙️", 
-        "Geometria e Condutividade ⚡"
-    ])
-    
-    with tab1:
-        st.markdown("### 🌀 A Regra do Octeto")
-        st.write(
-            "A **Teoria ou Regra do Octeto** é o pilar que explica como as ligações químicas acontecem. "
-            "Ela afirma que:\n\n"
-            "> *“Muitos átomos apresentam estabilidade eletrônica quando possuem **8 elétrons na camada de valência** (camada eletrônica mais externa).”* [2]\n\n"
-            "Para alcançar essa estabilidade ideal, os átomos na natureza realizam trocas ou compartilhamentos de elétrons, "
-            "originando as ligações químicas. Vale destacar que existem exceções para essa regra (especialmente nos elementos de transição), "
-            "mas ela serve perfeitamente para entender as ligações fundamentais [2]."
-        )
-        
-    with tab2:
-        st.markdown("### 🔋 Ligações Iônicas")
-        st.write(
-            "Nas **ligações iônicas**, ocorre a **transferência (perda ou ganho) definitiva de elétrons** entre os átomos [3, 4]. "
-            "Nesse processo:\n"
-            "- O átomo que **doa** elétrons torna-se um **cátion** (íon de carga positiva) [3, 7].\n"
-            "- O átomo que **recebe** elétrons torna-se um **ânion** (íon de carga negativa) [3, 7].\n\n"
-            "Por terem cargas elétricas opostas, esses íons se atraem fortemente de forma eletrostática, gerando compostos iônicos [3].\n\n"
-            "**Propriedades dos compostos iônicos:**\n"
-            "- São **sólidos e cristalinos** em condições ambientes de temperatura e pressão [3].\n"
-            "- Apresentam **elevados pontos de fusão e de ebulição** devido à força das atrações elétricas [3].\n"
-            "- **Condutividade:** Não conduzem corrente elétrica no estado sólido, mas são excelentes condutores quando fundidos (líquidos) ou dissolvidos em água, pois seus íons adquirem mobilidade livre [3].\n\n"
-            "**Exemplos Clássicos:** Cloreto de Sódio ($NaCl$ - sal de cozinha), Brometo de Potássio ($KBr$), Cloreto de Cálcio ($CaCl_2$) e Fluoreto de Magnésio ($MgF_2$) [3]."
-        )
-        
-    with tab3:
-        st.markdown("### 🧬 Ligações Covalentes")
-        st.write(
-            "Também chamadas de ligações moleculares, as **ligações covalentes** ocorrem quando há o **compartilhamento mútuo de pares de elétrons** para formar moléculas estáveis de acordo com o octeto [4].\n\n"
-            "Nesse tipo de ligação, os elétrons compartilhados passam a pertencer simultaneamente aos dois núcleos envolvidos, mantendo a molécula neutra (sem ganho ou perda real de elétrons) [4].\n\n"
-            "**Classificação quanto à polaridade:**\n"
-            "- **Ligação Covalente Polar:** Ocorre quando os átomos apresentam eletronegatividades distintas, gerando um polo com maior densidade de carga no átomo mais eletronegativo. **Exemplo:** Água ($H_2O$) ou Ácido Clorídrico ($HCl$) [5].\n"
-            "- **Ligação Covalente Apolar:** Ocorre quando a ligação é formada por átomos do mesmo elemento químico (ou eletronegatividades iguais), de forma que não há diferença de eletronegatividade. **Exemplo:** Gás Oxigênio ($O_2$) [5].\n\n"
-            "**Ligação Covalente Dativa (Coordenada):**\n"
-            "Ocorre quando um dos átomos já está totalmente estável com seus 8 elétrons de valência completa, mas compartilha um par extra de seus elétrons disponíveis com outro átomo que necessita de mais dois elétrons para ficar estável [6]. "
-            "Um exemplo clássico do material é o Dióxido de Enxofre ($SO_2$), representado por: $O = S \\rightarrow O$ [6].\n\n"
-            "**Exemplos Gerais:** Água ($H_2O$), Gás Oxigênio ($O_2$), Sacarose (açúcar - $C_{12}H_{22}O_{11}$) e Ácido Clorídrico ($HCl$) [5]."
-        )
-        
-    with tab4:
-        st.markdown("### ⚙️ Ligações Metálicas")
-        st.write(
-            "A **ligação metálica** ocorre exclusivamente entre elementos metálicos, caracterizados por serem altamente eletropositivos e possuírem facilidade para perder elétrons periféricos [7].\n\n"
-            "**A Teoria do Mar de Elétrons:**\n"
-            "Os átomos do metal liberam elétrons da sua última camada (valência), tornando-se cátions metálicos. "
-            "Esses elétrons liberados formam uma nuvem deslocalizada (o **'mar de elétrons'**) que flui livremente ao redor dos cátions. "
-            "Essa força eletrostática contínua é o que mantém os átomos unidos de forma extremamente flexível e resistente [7].\n\n"
-            "**Propriedades Gerais dos Metais:**\n"
-            "- **Estado Físico:** Todos os metais são **sólidos** em condições ambientes, com **exceção única do Mercúrio ($Hg$)**, que é o único metal líquido [8].\n"
-            "- **Condutividade:** São **excelentes condutores térmicos e elétricos** tanto no estado sólido quanto no estado fundido devido à extrema mobilidade de seus elétrons livres [7, 8].\n"
-            "- **Outros:** Possuem brilho característico, alta maleabilidade (capacidade de fazer chapas) e ductibilidade (capacidade de fazer fios).\n\n"
-            "**Exemplos Clássicos:** Ouro ($Au$), Cobre ($Cu$), Prata ($Ag$), Ferro ($Fe$), Níquel ($Ni$), Alumínio ($Al$), Chumbo ($Pb$) e Zinco ($Zn$) [7]."
-        )
-        
-    with tab5:
-        st.markdown("### ⚡ Matriz de Condutividade e Geometria")
-        st.write(
-            "Uma das formas mais fáceis de identificar o tipo de ligação de uma substância desconhecida em laboratório é testando a sua **condutividade elétrica** nos estados sólido e dissolvido/fundido."
-        )
-        
-        dados_condutividade = {
-            "Tipo de Composto": ["Iônico [3]", "Covalente / Molecular [5]", "Metálico [7]"],
-            "Unidade Básica": ["Íons (Cátions e Ânios) [3]", "Moléculas neutras [4, 5]", "Átomos envoltos em nuvem eletrônica [7]"],
-            "Condutividade (Sólido)": ["PÉSSIMA (Íons presos no retículo) [3]", "PÉSSIMA (Não há cargas livres) [5]", "EXCELENTE (Mar de elétrons livre) [7, 8]"],
-            "Condutividade (Líquido/Fundido/Solução)": ["EXCELENTE (Íons livres em movimento) [3]", "PÉSSIMA (Não possui cargas móveis) [5]", "EXCELENTE (Mar de elétrons livre) [7, 8]"],
-            "Exemplos Chave": ["NaCl, KBr, CaCl2 [3]", "H2O, HCl, CO2, Sacarose [5, 9]", "Fe, Cu, Al, Au, Ag [7]"]
-        }
-        st.table(pd.DataFrame(dados_condutividade))
+# --- CONTEÚDO PRINCIPAL ---
 
-# Seção 3: Simulador de Ligações
-elif menu == "3. Simulador de Ligações ⚙️":
-    st.markdown("## ⚙️ Simulador Interativo de Ligações Químicas")
-    st.write(
-        "Nesta área, você pode simular a união de diferentes elementos químicos e descobrir o tipo de ligação "
-        "que eles vão formar e as propriedades físicas e elétricas do composto resultante!"
+# ── ETAPA 1: IDENTIFICAÇÃO ──────────────────────────────────────────
+if st.session_state.etapa == "Identificação":
+    st.markdown("### 👋 Bem-vindo à Atividade de Recuperação!")
+    st.write("""
+    Esta atividade foi desenhada para funcionar perfeitamente no seu celular ou computador.
+    Preencha seus dados abaixo para iniciar sua jornada de aprendizado.
+    """)
+    
+    nome = st.text_input("Seu Nome Completo", value=st.session_state.nome)
+    
+    col_ano, col_turma = st.columns(2)
+    with col_ano:
+        ano = st.selectbox("Ano de Ensino", ["2º Ano"], index=0)
+    with col_turma:
+        serie = st.text_input("Série / Turma (ex: 'A', 'B')", value=st.session_state.serie)
+        
+    if st.button("Iniciar Atividade ➡️", use_container_width=True):
+        if nome.strip() == "" or serie.strip() == "":
+            st.error("⚠️ Por favor, digite seu Nome Completo e sua Série/Turma antes de continuar!")
+        else:
+            # BLOQUEIO ANTI-DUPLICIDADE: Verificar se esse aluno já respondeu no banco de dados CSV
+            if os.path.exists(CSV_PATH):
+                df_check = pd.read_csv(CSV_PATH)
+                ja_registrado = df_check[
+                    (df_check["Nome"].str.strip().str.lower() == nome.strip().lower()) & 
+                    (df_check["Série"].astype(str).str.strip().str.lower() == serie.strip().lower())
+                ]
+                if not ja_registrado.empty:
+                    nota_antiga = ja_registrado.iloc[0]["Nota"]
+                    st.error(f"❌ Acesso Negado: O estudante **{nome}** da série **{serie}** já realizou esta atividade! Sua nota ({nota_antiga:.1f}) já está salva no banco do professor.")
+                    st.stop()
+            
+            st.session_state.nome = nome
+            st.session_state.ano = ano
+            st.session_state.serie = serie
+            inicializar_quiz()
+            st.session_state.etapa = "Vídeo de Apoio"
+            st.rerun()
+
+# ── ETAPA 2: VÍDEO DE APOIO ──────────────────────────────────────────
+elif st.session_state.etapa == "Vídeo de Apoio":
+    st.markdown("### 📺 Passo 2: Assistir ao Vídeo & Estudo")
+    st.write("Antes das perguntas, assista ao resumo preparado pelo Professor Choven ou leia o resumo explicativo abaixo:")
+    
+    # Player do YouTube
+    st.video("https://www.youtube.com/watch?v=8mG5bJz82S0")
+    
+    # Link alternativo para celular
+    st.markdown("""
+    🔗 **[Não carregou? Clique aqui para assistir direto no YouTube](https://www.youtube.com/watch?v=8mG5bJz82S0)**
+    """)
+    
+    # Resumo Escrito para garantir acessibilidade offline ou em conexões lentas
+    with st.expander("📖 Ler o Resumo Completo da Aula (Acessibilidade)"):
+        st.markdown(r"""
+        **Pontos-Chave explicados no Vídeo:**
+        1. **Entalpia (H):** É a quantidade de calor e energia contida em um determinado sistema físico ou químico.
+        2. **Variação de Entalpia (ΔH):** Representa a diferença de calor entre o final (Produtos) e o início (Reagentes):
+           $$\Delta H = H_{Produtos} - H_{Reagentes}$$
+        3. **Fatores que alteram o ΔH:**
+           * Estado físico de reagente e produto.
+           * Estado alotrópico dos elementos.
+           * Temperatura do meio.
+           * Concentração / Quantidade de matéria envolvida.
+        4. **Processo Exotérmico (ΔH < 0):** Libera calor para o meio ambiente. A entalpia dos produtos é menor do que a dos reagentes. *(Exemplo: Queima de combustível nos motores).*
+        5. **Processo Endotérmico (ΔH > 0):** Absorve calor do meio. A entalpia final dos produtos é maior que a inicial dos reagentes. *(Exemplo: Filtro de barro e bolsas esportivas de gelo instantâneo).*
+        6. **Lei de Hess (A Analogia do Shopping):** Não importa o caminho tomado (seja o homem que vai direto à loja ou a mulher que percorre todo o shopping), se o ponto de partida (reagente) e o ponto final (produto) são idênticos, a variação total de energia ($\Delta H$) será exatamente a mesma!
+        """)
+        
+    st.markdown("---")
+    col_nav1, col_nav2 = st.columns(2)
+    with col_nav1:
+        if st.button("⬅️ Voltar", use_container_width=True):
+            st.session_state.etapa = "Identificação"
+            st.rerun()
+    with col_nav2:
+        if st.button("Avançar para o Simulador ➡️", use_container_width=True):
+            st.session_state.etapa = "Simulador Prático"
+            st.rerun()
+
+# ── ETAPA 3: SIMULADOR PRÁTICO ───────────────────────────────────────
+elif st.session_state.etapa == "Simulador Prático":
+    st.markdown("### 🌡️ Passo 3: Simulador Térmico Virtual")
+    st.write("Veja como os processos descritos em seu material didático absorvem ou liberam calor na prática:")
+    
+    processo = st.selectbox(
+        "Selecione um processo prático para simular:",
+        [
+            "Sacos de Gelo de Nitrato de Amônio (Resfriamento Esportivo)",
+            "Combustão de Gasolina (Motor de Automóveis)",
+            "Evaporação de Água em Filtros de Barro",
+            "Dissolução de Cloreto de Cálcio (CaCl₂)"
+        ]
     )
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### Selecione os Elementos:")
-        elemento_a = st.selectbox(
-            "Elemento A:",
-            ["Sódio (Na) [Metal]", "Cobre (Cu) [Metal]", "Hidrogênio (H) [Não-Metal]", "Carbono (C) [Não-Metal]", "Enxofre (S) [Não-Metal]"]
-        )
-        elemento_b = st.selectbox(
-            "Elemento B:",
-            ["Cloro (Cl) [Não-Metal]", "Oxigênio (O) [Não-Metal]", "Cobre (Cu) [Metal]", "Potássio (K) [Metal]"]
-        )
-        
-        simular = st.button("Simular Ligação! 🔬")
-        
-    with col2:
-        st.markdown("### Resultado da Ligação:")
-        if simular:
-            # Sódio (Na) + Cloro (Cl) -> NaCl (Iônica)
-            if "Sódio" in elemento_a and "Cloro" in elemento_b:
-                st.success("#### ⚡ Composto Formado: Cloreto de Sódio ($NaCl$)")
-                st.markdown("**Tipo de Ligação:** **Iônica** [3]")
-                st.markdown(
-                    "**Como ocorre:** O Sódio (Na) doa 1 elétron da sua última camada para o Cloro (Cl). "
-                    "O Sódio se torna o cátion $Na^+$ e o cloro vira o ânion $Cl^-$ [3]."
-                )
-                st.markdown("**Propriedades Físicas:** Sólido cristalino em condições ambientes com altíssimo ponto de fusão [3].")
-                st.markdown("**Condutividade Elétrica:** Não conduz quando sólido, mas **conduz de forma excelente quando dissolvido em água** [3].")
-            
-            # Sódio (Na) + Oxigênio (O) -> Na2O (Iônica) - CORREGIDO
-            elif "Sódio" in elemento_a and "Oxigênio" in elemento_b:
-                st.success("#### 🧂 Composto Formado: Óxido de Sódio ($Na_2O$)")
-                st.markdown("**Tipo de Ligação:** **Iônica** [3]")
-                st.markdown(
-                    "**Como ocorre:** Cada átomo de Sódio (Na) [Metal] doa 1 elétron para o átomo de Oxigênio (O) [Não-Metal]. "
-                    "São necessários dois átomos de Sódio para suprir a necessidade de dois elétrons do oxigênio, formando cátions $Na^+$ e o ânion $O^{2-}$ [2, 3]."
-                )
-                st.markdown("**Propriedades Físicas:** Sólido iônico cristalino branco em condições normais de elevadíssimo ponto de fusão [3].")
-                st.markdown("**Condutividade Elétrica:** Não conduz corrente quando sólido, mas é um **excelente condutor elétrico em solução aquosa ou quando fundido (líquido)** devido à liberação de íons livres [3].")
-
-            # Cobre (Cu) + Cobre (Cu) -> Cu-Cu (Metálica)
-            elif "Cobre" in elemento_a and "Cobre" in elemento_b:
-                st.success("#### 🪙 Composto Formado: Cobre Metálico ($Cu$)")
-                st.markdown("**Tipo de Ligação:** **Metálica** [7]")
-                st.markdown(
-                    "**Como ocorre:** Os átomos de cobre perdem elétrons periféricos que passam a se mover "
-                    "livremente por uma nuvem eletrônica ('mar de elétrons'), colando os cátions firmemente [7]."
-                )
-                st.markdown("**Propriedades Físicas:** Sólido brilhante, extremamente maleável e dúctil [8].")
-                st.markdown("**Condutividade Elétrica:** **Excelente condutor elétrico e térmico no estado sólido ou fundido** devido aos elétrons livres [7, 8].")
-            
-            # Hidrogênio (H) + Oxigênio (O) -> H2O (Covalente Polar)
-            elif "Hidrogênio" in elemento_a and "Oxigênio" in elemento_b:
-                st.success("#### 💧 Composto Formado: Água ($H_2O$)")
-                st.markdown("**Tipo de Ligação:** **Covalente Polar** [5]")
-                st.markdown(
-                    "**Como ocorre:** Há o compartilhamento de elétrons entre o oxigênio e os hidrogênios. "
-                    "Como o oxigênio é mais eletronegativo, a ligação é classificada como **polar** [5]."
-                )
-                st.markdown("**Propriedades Físicas:** Líquido em condições ambientes [5, 8].")
-                st.markdown("**Condutividade Elétrica:** A água pura é um **péssimo condutor elétrico** pois as moléculas compartilhadas não possuem carga elétrica móvel [5].")
-            
-            # Enxofre (S) + Oxigênio (O) -> SO2 (Covalente Dativa)
-            elif "Enxofre" in elemento_a and "Oxigênio" in elemento_b:
-                st.success("#### 💨 Composto Formado: Dióxido de Enxofre ($SO_2$)")
-                st.markdown("**Tipo de Ligação:** **Covalente Dativa (Coordenada)** [6]")
-                st.markdown(
-                    "**Como ocorre:** O enxofre realiza uma dupla ligação estável com um oxigênio. Para se ligar "
-                    "ao segundo oxigênio, o enxofre (com octeto completo) compartilha um par eletrônico dativo [6]."
-                )
-                st.markdown("**Propriedades Físicas:** Composto molecular gasoso.")
-                st.markdown("**Condutividade Elétrica:** Isolante elétrico (péssimo condutor) em estado puro.")
-            
-            # Carbono (C) + Oxigênio (O) -> CO2 (Covalente Apolar)
-            elif "Carbono" in elemento_a and "Oxigênio" in elemento_b:
-                st.success("#### 🌫️ Composto Formado: Dióxido de Carbono ($CO_2$)")
-                st.markdown("**Tipo de Ligação:** **Covalente** [9]")
-                st.markdown(
-                    "**Como ocorre:** O carbono compartilha seus 4 elétrons de valência realizando ligações duplas "
-                    "com dois átomos de oxigênio para que todos atinjam 8 elétrons na camada de valência [2, 9]."
-                )
-                st.markdown("**Propriedades Físicas:** Gás molecular em condições ambientes.")
-                st.markdown("**Condutividade Elétrica:** Não conduz corrente elétrica.")
-                
-            # Combinações não iônicas / iônicas padrão - corrigido com "[Metal]" e "[Não-Metal]" para evitar colisão do substring "Metal" em "Não-Metal"
-            elif ("[Metal]" in elemento_a and "[Metal]" in elemento_b) or ("Cobre" in elemento_a and "Potássio" in elemento_b):
-                st.warning("#### 🧱 Composto Formado: Liga Metálica")
-                st.markdown("**Tipo de Ligação:** **Metálica** [7]")
-                st.markdown("União de elementos metálicos eletropositivos compartilhando um mar de elétrons [7].")
-            
-            elif ("[Metal]" in elemento_a and "[Não-Metal]" in elemento_b) or ("Potássio" in elemento_b and "[Não-Metal]" in elemento_a):
-                st.success("#### 🧂 Composto Formado: Sal Iônico")
-                st.markdown("**Tipo de Ligação:** **Iônica** [3]")
-                st.markdown("Ocorre transferência total de elétrons do metal para o não-metal com formação de cátions e ânions [3].")
-                
-            else:
-                st.info("#### 🧬 Composto Formado: Substância Molecular")
-                st.markdown("**Tipo de Ligação:** **Covalente** [4]")
-                st.markdown("Compartilhamento de pares eletrônicos entre átomos não-metálicos [4].")
-        else:
-            st.info("Selecione os elementos na esquerda e clique em 'Simular' para ver a mágica da química!")
-
-# Seção 4: Quiz de Recuperação
-elif menu == "4. Quiz de Recuperação ✍️":
-    st.markdown("## ✍️ Avaliação Oficial de Recuperação")
-    
-    # Impedir acesso se o aluno não estiver identificado
-    if not st.session_state.aluno_nome:
-        st.error("⚠️ Para realizar a avaliação, você deve se identificar primeiro na seção '1. Identificação do Aluno 👤' no menu lateral.")
+    if processo == "Sacos de Gelo de Nitrato de Amônio (Resfriamento Esportivo)":
+        nome_reacao = "Dissol. de Nitrato de Amônio"
+        tipo_reacao = "Endotérmica"
+        temp_inicial, temp_final = 25, -15
+        delta_h_val = "+26 kJ/mol"
+        reacao_quimica = "NH₄NO₃(s) + H₂O(l) → NH₄⁺(aq) + NO₃⁻(aq)  (ΔH > 0)"
+        descricao = "❄️ **Saco de Gelo Instantâneo (Pág. 40):** O rompimento do compartimento interno faz o sal dissolver-se na água de forma endotérmica. Como o sal absorve calor do ambiente para se dissolver, a temperatura despenca para até -15°C!"
+    elif processo == "Combustão de Gasolina (Motor de Automóveis)":
+        nome_reacao = "Combustão do Octano (Gasolina)"
+        tipo_reacao = "Exotérmica"
+        temp_inicial, temp_final = 25, 90
+        delta_h_val = "-5461 kJ/mol"
+        reacao_quimica = "C₈H₁₈(l) + 25/2 O₂(g) → 8 CO₂(g) + 9 H₂O(l) + Calor"
+        descricao = "🔥 **Motor do Carro (Pág. 37, 40):** A combustão da gasolina é altamente exotérmica. Para evitar que as peças de metal sofram fusão pelo calor liberado, a água do sistema de arrefecimento deve absorver essa energia constantemente."
+    elif processo == "Evaporação de Água em Filtros de Barro":
+        nome_reacao = "Evaporação de H₂O"
+        tipo_reacao = "Endotérmica"
+        temp_inicial, temp_final = 25, 18
+        delta_h_val = "+44 kJ/mol"
+        reacao_quimica = "H₂O(l) + calor (do sistema) → H₂O(g)"
+        descricao = "🏺 **Filtro de Barro (Pág. 39):** A água atravessa os microporos da argila. Ao chegar no exterior, ela evapora (um processo endotérmico), retirando energia térmica da própria água interna, mantendo-a sempre fresca."
     else:
-        st.write(
-            f"Olá, **{st.session_state.aluno_nome}**! Sua prova contém **10 questões aleatórias** geradas a partir do nosso banco de dados. "
-            "Responda com calma e, ao final, envie as respostas para salvar sua nota no sistema do professor."
-        )
-        
-        # Sortear as 10 questões apenas uma vez e salvar na sessão
-        if not st.session_state.quiz_perguntas:
-            random.seed(datetime.now().timestamp())
-            questoes_sorteadas = random.sample(QUESTOES_POOL, 10)
-            st.session_state.quiz_perguntas = questoes_sorteadas
-            st.session_state.respostas_aluno = {}
-            st.session_state.quiz_enviado = False
-            st.session_state.quiz_nota = 0.0
-            
-        questoes = st.session_state.quiz_perguntas
-        
-        # --- VERIFICAÇÃO SE O ALUNO JÁ REALIZOU O QUIZ ---
-        ja_realizou = False
-        nota_registrada = 0.0
-        acertos_registrados = 0
-        respostas_registradas = {}
-        
-        if os.path.exists(DATABASE_PATH):
-            try:
-                df_db = pd.read_csv(DATABASE_PATH)
-                # Buscar correspondência exata para Nome (case-insensitive e stripped), Ano e Turma
-                match_aluno = df_db[
-                    (df_db["Nome"].str.strip().str.lower() == st.session_state.aluno_nome.strip().lower()) &
-                    (df_db["Ano"] == st.session_state.aluno_ano) &
-                    (df_db["Turma"] == st.session_state.aluno_turma)
-                ]
-                if len(match_aluno) > 0:
-                    ja_realizou = True
-                    registro = match_aluno.iloc[0]
-                    nota_registrada = float(registro["Nota"])
-                    acertos_registrados = int(registro["Acertos"])
-                    try:
-                        import ast
-                        respostas_registradas = ast.literal_eval(registro["Respostas"])
-                    except:
-                        respostas_registradas = {}
-            except Exception as e:
-                st.error(f"Erro ao consultar registros de envio: {e}")
-                
-        # Se já realizou, mostrar a revisão diretamente (bloqueando nova tentativa)
-        if ja_realizou:
-            st.warning("⚠️ **Você já realizou esta avaliação de recuperação anteriormente!**")
-            st.info(f"Sua nota registrada no sistema é: **{nota_registrada:.1f} / 10.0** ({acertos_registrados} de 10 acertos). Não é permitido refazer a avaliação.")
-            
-            st.markdown("### 📊 Revisão da sua Avaliação")
-            
-            # Percorrer as questões e mostrar o gabarito
-            for idx, q in enumerate(questoes):
-                st.markdown(f"#### Pergunta {idx + 1}")
-                st.markdown(f"**{q['pergunta']}**")
-                
-                # Resposta que o estudante deu
-                resp_aluno = respostas_registradas.get(q['id']) or respostas_registradas.get(str(q['id']))
-                
-                for op in q["opcoes"]:
-                    if op == q["correta"]:
-                        if resp_aluno == op:
-                            st.write(f"🟢 **{op}** (Sua resposta - Correta! ✅)")
-                        else:
-                            st.write(f"🟢 **{op}** (Alternativa Correta)")
-                    elif resp_aluno == op:
-                        st.write(f"🔴 **{op}** (Sua resposta - Incorreta ❌)")
-                    else:
-                        st.write(f"⚪ {op}")
-                
-                st.info(f"💡 *Explicação científica:* {q['justificativa']}")
-                st.markdown("---")
-        else:
-            # Caso contrário, exibir o formulário ativo para responder
-            with st.form("form_quiz"):
-                for idx, q in enumerate(questoes):
-                    st.markdown(f"#### Pergunta {idx + 1}")
-                    st.markdown(f"**{q['pergunta']}**")
-                    
-                    key_name = f"q_{q['id']}"
-                    
-                    escolha = st.radio(
-                        "Selecione a alternativa correta:",
-                        q["opcoes"],
-                        key=key_name,
-                        index=None
-                    )
-                    
-                    # Salvar a resposta selecionada no dicionário da sessão
-                    if escolha:
-                        st.session_state.respostas_aluno[q['id']] = escolha
-                        
-                    st.markdown("---")
-                
-                enviar_respostas = st.form_submit_button("Enviar Avaliação ao Professor 📤")
-                
-                if enviar_respostas:
-                    respostas_dadas = st.session_state.respostas_aluno
-                    if len(respostas_dadas) < 10:
-                        st.error("⚠️ Você precisa responder a todas as 10 questões antes de enviar!")
-                    else:
-                        # Calcular nota
-                        acertos = 0
-                        for q in questoes:
-                            resp_aluno = respostas_dadas.get(q['id'])
-                            if resp_aluno == q['correta']:
-                                acertos += 1
-                                
-                        nota_final = float(acertos) # Escala de 0 a 10
-                        st.session_state.quiz_nota = nota_final
-                        st.session_state.quiz_enviado = True
-                        
-                        # Salvar no banco de dados persistente (CSV)
-                        nova_nota = {
-                            "Data": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                            "Nome": st.session_state.aluno_nome.strip(),
-                            "Ano": st.session_state.aluno_ano,
-                            "Turma": st.session_state.aluno_turma,
-                            "Nota": nota_final,
-                            "Acertos": acertos,
-                            "Respostas": str(respostas_dadas)
-                        }
-                        
-                        try:
-                            df_db = pd.read_csv(DATABASE_PATH)
-                            df_db = pd.concat([df_db, pd.DataFrame([nova_nota])], ignore_index=True)
-                            df_db.to_csv(DATABASE_PATH, index=False)
-                            st.success("🎉 Avaliação enviada com sucesso! Sua nota foi computada no sistema do professor.")
-                            st.balloons()
-                            try:
-                                st.rerun()
-                            except AttributeError:
-                                st.experimental_rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao salvar nota no sistema: {e}")
+        nome_reacao = "Dissol. de Cloreto de Cálcio"
+        tipo_reacao = "Endotérmica"
+        temp_inicial, temp_final = 25, 10
+        delta_h_val = "ΔH > 0"
+        reacao_quimica = "CaCl₂(s) + H₂O(l) → Ca²⁺(aq) + 2 Cl⁻(aq)"
+        descricao = "🧪 **Experimento com CaCl₂ (Pág. 38, 40):** Na experimentação em laboratório, a dissolução de cloreto de cálcio causa absorção líquida de energia (ganho pelo sistema), resfriando visivelmente as paredes do béquer ao toque."
 
-# Seção 5: Área do Professor
-elif menu == "5. Área do Professor 🔑":
-    st.markdown("## 🔑 Área do Professor - Gerenciador de Notas")
-    st.write("Acesso restrito para visualização e análise de notas dos alunos de recuperação.")
+    # Slider para simular a reação de forma interativa e visual no celular
+    tempo = st.slider("Arraste o botão para acompanhar a Reação (Tempo):", 0, 100, 100)
     
-    # Controle de senha simples
-    senha = st.text_input("Digite a senha do Professor:", type="password")
-    
-    if senha == "quimica2026":
-        st.success("Acesso liberado! Abaixo estão listadas as notas dos alunos que enviaram o quiz.")
+    if tipo_reacao == "Exotérmica":
+        temp_atual = temp_inicial + (temp_final - temp_inicial) * (tempo / 100)
+        st.metric("Termômetro Virtual", f"{temp_atual:.1f} °C", f"+{temp_atual - temp_inicial:.1f} °C (AQUECIMENTO)")
+    else:
+        temp_atual = temp_inicial - (temp_inicial - temp_final) * (tempo / 100)
+        st.metric("Termômetro Virtual", f"{temp_atual:.1f} °C", f"-{temp_inicial - temp_atual:.1f} °C (RESFRIAMENTO)", delta_color="inverse")
         
-        # Carregar notas
-        try:
-            if os.path.exists(DATABASE_PATH):
-                df_notas = pd.read_csv(DATABASE_PATH)
-            else:
-                df_notas = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
-        except Exception as e:
-            st.error(f"Erro ao ler banco de dados: {e}")
-            df_notas = pd.DataFrame()
+    st.info(descricao)
+    
+    # Exibição do gráfico do diagrama de entalpia
+    fig_gr = plotar_diagrama(tipo_reacao, nome_reacao)
+    st.pyplot(fig_gr)
+    
+    st.markdown("---")
+    col_nav1, col_nav2 = st.columns(2)
+    with col_nav1:
+        if st.button("⬅️ Voltar", use_container_width=True):
+            st.session_state.etapa = "Vídeo de Apoio"
+            st.rerun()
+    with col_nav2:
+        if st.button("Fazer Prova de Recuperação ➡️", use_container_width=True):
+            st.session_state.etapa = "Quiz Interativo"
+            st.rerun()
+
+# ── ETAPA 4: QUIZ INTERATIVO (Questionário & Validação) ─────────────
+elif st.session_state.etapa == "Quiz Interativo":
+    st.markdown("### 📝 Passo 4: Questionário de Avaliação")
+    
+    # Caso o aluno ainda NÃO tenha finalizado a prova
+    if not st.session_state.finalizado:
+        st.write("Responda às 5 perguntas exclusivas sorteadas para você. Elas serão validadas e enviadas diretamente para a planilha do professor ao clicar no botão final.")
+        
+        with st.form("form_prova"):
+            respostas_temp = {}
+            for idx, q in enumerate(st.session_state.questoes_sorteadas):
+                st.markdown(f"**Pergunta {idx + 1}:** {q['pergunta']}")
+                st.caption(f"📍 Referência de estudos: {q['referencia']}")
+                
+                resposta = st.radio(
+                    "Selecione a resposta correta:",
+                    q["opcoes"],
+                    key=f"radio_q_{q['id']}",
+                    index=None
+                )
+                respostas_temp[q["id"]] = resposta
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+            btn_enviar = st.form_submit_button("Validar e Enviar Respostas ao Professor 🚀", use_container_width=True)
             
-        if df_notas.empty:
-            st.info("Nenhum estudante realizou o quiz de recuperação ainda.")
+            if btn_enviar:
+                # Validar se todas as questões foram respondidas
+                respondidas = [resp is not None for resp in respostas_temp.values()]
+                if not all(respondidas):
+                    st.error("⚠️ Você precisa responder a todas as 5 questões antes de enviar!")
+                else:
+                    # PROCESSAMENTO DOS RESULTADOS
+                    st.session_state.respostas_estudante = respostas_temp
+                    acertos = 0
+                    total = len(st.session_state.questoes_sorteadas)
+                    gabarito_detalhes = []
+                    
+                    for idx, q in enumerate(st.session_state.questoes_sorteadas):
+                        resp_aluno = respostas_temp[q["id"]]
+                        opcao_correta = q["opcoes"][q["correta"]]
+                        foi_correto = (resp_aluno == opcao_correta)
+                        
+                        if foi_correto:
+                            acertos += 1
+                        
+                        gabarito_detalhes.append({
+                            "num": idx + 1,
+                            "pergunta": q["pergunta"],
+                            "resp_aluno": resp_aluno,
+                            "resp_correta": opcao_correta,
+                            "status": "✅ Correta" if foi_correto else "❌ Incorreta"
+                        })
+                        
+                    nota = (acertos / total) * 10.0
+                    st.session_state.nota_obtida = nota
+                    st.session_state.gabarito = gabarito_detalhes
+                    
+                    # SALVAR EM BANCO DE DADOS (CSV LOCAL)
+                    novo_registro = pd.DataFrame([{
+                        "Data_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Nome": st.session_state.nome,
+                        "Ano": st.session_state.ano,
+                        "Série": st.session_state.serie,
+                        "Nota": nota,
+                        "Acertos": acertos,
+                        "Q1": gabarito_detalhes[0]["status"],
+                        "Q2": gabarito_detalhes[1]["status"],
+                        "Q3": gabarito_detalhes[2]["status"],
+                        "Q4": gabarito_detalhes[3]["status"],
+                        "Q5": gabarito_detalhes[4]["status"]
+                    }])
+                    
+                    if os.path.exists(CSV_PATH):
+                        df_old = pd.read_csv(CSV_PATH)
+                        df_new = pd.concat([df_old, novo_registro], ignore_index=True)
+                    else:
+                        df_new = novo_registro
+                        
+                    df_new.to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
+                    
+                    # Finalizar etapa e travar sessão
+                    st.session_state.finalizado = True
+                    st.rerun()
+                    
+        if st.button("⬅️ Voltar ao Simulador", use_container_width=True):
+            st.session_state.etapa = "Simulador Prático"
+            st.rerun()
+
+    # Caso a prova JÁ tenha sido enviada
+    else:
+        st.success("🎉 Atividade enviada com sucesso ao banco do professor!")
+        st.markdown(f"### Nota Final: `{st.session_state.nota_obtida:.1f} / 10.0`")
+        
+        if st.session_state.nota_obtida >= 6.0:
+            st.balloons()
+            st.success("Excelente! Você atingiu os critérios de aprovação na recuperação! 🌟")
         else:
-            # Filtros do Professor
-            st.markdown("### 🔍 Filtros e Pesquisas")
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                filtro_nome = st.text_input("Filtrar por nome do Aluno:", "")
-            with col_f2:
-                filtro_turma = st.multiselect("Filtrar por Turma:", ["A", "B", "C"], default=["A", "B", "C"])
-                
-            # Aplicar filtros
-            df_filtrado = df_notas.copy()
-            if filtro_nome:
-                df_filtrado = df_filtrado[df_filtrado["Nome"].str.contains(filtro_nome, case=False, na=False)]
-            df_filtrado = df_filtrado[df_filtrado["Turma"].isin(filtro_turma)]
+            st.warning("Estude o conteúdo novamente para reforçar seus conhecimentos! Você consegue! 💪")
             
-            # Painel de métricas gerais
-            st.markdown("### 📊 Painel de Desempenho")
-            m_col1, m_col2, m_col3 = st.columns(3)
-            with m_col1:
-                st.metric("Total de Alunos Avaliados", len(df_filtrado))
-            with m_col2:
-                media_geral = df_filtrado["Nota"].mean() if len(df_filtrado) > 0 else 0.0
-                st.metric("Média Geral de Notas", f"{media_geral:.2f} / 10.0")
-            with m_col3:
-                taxa_aprovacao = (len(df_filtrado[df_filtrado["Nota"] >= 6.0]) / len(df_filtrado) * 100) if len(df_filtrado) > 0 else 0.0
-                st.metric("Taxa de Aprovação (Nota >= 7.0)", f"{taxa_aprovacao:.1f}%")
+        st.write("---")
+        st.subheader("📊 Revisão e Gabarito:")
+        
+        for dg in st.session_state.gabarito:
+            with st.expander(f"Questão {dg['num']}: {dg['status']}"):
+                st.write(f"**Pergunta:** {dg['pergunta']}")
+                st.write(f"**Sua Resposta:** {dg['resp_aluno']}")
+                if dg['status'] == "❌ Incorreta":
+                    st.write(f"**Resposta Correta:** {dg['resp_correta']}")
+                    
+        st.info("Sua tentativa foi concluída e está bloqueada. Para um novo estudante responder, clique no botão de reset abaixo.")
+        if st.button("🔄 Reiniciar Sistema (Outro Aluno)", use_container_width=True):
+            st.session_state.nome = ""
+            st.session_state.serie = ""
+            st.session_state.questoes_sorteadas = []
+            st.session_state.respostas_estudante = {}
+            st.session_state.finalizado = False
+            st.session_state.etapa = "Identificação"
+            st.rerun()
+
+# ── 🔐 ÁREA DO PROFESSOR (Apenas na base do site e com expander seguro) ───────────────────
+st.markdown("<br><br><br><hr>", unsafe_allow_html=True)
+with st.expander("🔐 Central de Notas do Professor (Acesso Restrito)"):
+    senha = st.text_input("Digite a senha do professor para visualizar as notas:", type="password")
+    if senha == "quimica123":
+        st.success("Acesso autorizado!")
+        if os.path.exists(CSV_PATH):
+            df_notas = pd.read_csv(CSV_PATH)
+            st.dataframe(df_notas)
             
-            # Gráfico de média por turma
-            if len(df_filtrado) > 0:
-                st.markdown("### 📈 Média de Notas por Turma")
-                df_turma_media = df_filtrado.groupby("Turma")["Nota"].mean().reset_index()
-                
-                df_chart = df_turma_media.set_index("Turma")
-                st.bar_chart(df_chart["Nota"])
-            
-            # Tabela de notas completa
-            st.markdown("### 📝 Lista de Estudantes e Notas")
-            st.dataframe(df_filtrado[["Data", "Nome", "Ano", "Turma", "Nota", "Acertos"]], use_container_width=True)
-            
-            # Botão para exportar resultados
-            csv_data = df_filtrado.to_csv(index=False).encode('utf-8')
+            csv_data = df_notas.to_csv(index=False).encode('utf-8-sig')
             st.download_button(
-                label="Baixar Planilha de Notas (CSV) 📥",
+                label="📥 Baixar Planilha Consolidada (Excel/CSV)",
                 data=csv_data,
-                file_name=f"notas_recuperacao_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime='text/csv'
+                file_name=f"recuperacao_notas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True
             )
             
-            # Opção de resetar banco para testes do professor
-            st.markdown("---")
-            st.markdown("#### ⚙️ Ferramentas Administrativas")
-            confirmar_exclusao = st.checkbox("Desejo limpar e zerar o banco de notas de recuperação.")
-            if confirmar_exclusao:
-                if st.button("Limpar Banco de Dados permanentemente 🚨"):
-                    df_init = pd.DataFrame(columns=["Data", "Nome", "Ano", "Turma", "Nota", "Acertos", "Respostas"])
-                    df_init.to_csv(DATABASE_PATH, index=False)
-                    st.success("Banco de notas limpo com sucesso! Atualize a página.")
-                    try:
-                        st.rerun()
-                    except AttributeError:
-                        st.experimental_rerun()
-                    
+            if st.button("🗑️ Reiniciar Banco de Dados (Apagar todas as notas)", use_container_width=True):
+                os.remove(CSV_PATH)
+                st.warning("O banco de dados foi limpo! Recarregue a página.")
+        else:
+            st.info("Nenhuma nota foi registrada por alunos até o momento.")
     elif senha != "":
-        st.error("Senha incorreta! Verifique os dados ou contate a coordenação.")
+        st.error("Senha de acesso incorreta!")
